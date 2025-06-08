@@ -1,0 +1,65 @@
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(page_title="MHRPT Auto Prototype", layout="wide")
+
+st.title("🏇 MHRPT Automated Prototype")
+st.markdown("This is a live simulation of the MHRPT value betting model using auto-loaded race data and odds.")
+
+# Simulated race data (can be replaced with live data feed in future)
+data = {
+    "Horse": [
+        "Poatan",
+        "Ahead of Fashion",
+        "Rapid Return",
+        "Whirlwind Warrior",
+        "Silent Arrow",
+        "Neon Nova"
+    ],
+    "MHRPT_Score": [78, 65, 55, 48, 42, 36],
+    "Odds": [6.0, 4.5, 9.0, 12.0, 15.0, 20.0]  # Simulated Betfair odds
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+# Calculate MHRPT Win %
+df["MHRPT_Win_%"] = df["MHRPT_Score"] / df["MHRPT_Score"].sum() * 100
+
+# Calculate Implied Win %
+df["Implied_Win_%"] = 100 / df["Odds"]
+
+# Calculate Value %
+df["Value_%"] = df["MHRPT_Win_%"] - df["Implied_Win_%"]
+
+# Flag value bets
+def flag_value(row):
+    if row["Value_%"] >= 10:
+        return "✅ Strong Value"
+    elif row["Value_%"] >= 5:
+        return "🟡 Moderate Value"
+    else:
+        return ""
+
+df["Flag"] = df.apply(flag_value, axis=1)
+
+# Sort by value %
+df = df.sort_values(by="Value_%", ascending=False)
+
+# Format display
+st.dataframe(df.style.format({
+    "MHRPT_Win_%": "{:.1f}%",
+    "Implied_Win_%": "{:.1f}%",
+    "Value_%": "{:+.1f}%"
+}))
+
+# Download option
+csv = df.to_csv(index=False)
+st.download_button(
+    label="📥 Download Results CSV",
+    data=csv,
+    file_name='mhrpt_results.csv',
+    mime='text/csv'
+)
+
+st.info("Note: This prototype uses simulated data. Live odds and race integration coming in the next version.")
